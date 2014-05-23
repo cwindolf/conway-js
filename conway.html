@@ -1,0 +1,1384 @@
+<html>
+<head>
+	<title>Conway's Game of Life</title>
+	<style type="text/css">
+		body {
+			background-color:#F0F0F0;
+		}
+		div {
+			margin-left:auto;
+			margin-right:auto;
+			margin-bottom:0.5%;
+			border: 2px solid #606060;
+			border-radius: 2px;
+			box-shadow: 5px 5px 5px #888888;
+		}
+		input[type=button] {
+			height:80%;
+			border: 1px solid #A0A0A0;
+			border-radius: 2px;
+			box-shadow: 0 0 0 0;
+			background-color: #F0F0F0;
+			margin-top: 0.2%;
+			margin-left: 0.2%;
+		}
+		#random, #clear {
+			background-color:#00BBBB;
+			color:white;
+			border-color: black;
+		}
+		#buttons {
+			width:99%;
+			height:4%;
+			background-color:#80A092;
+		}
+		#buttons a {
+			text-anchor: middle;
+			position:relative;
+			font-family: sans-serif;
+			color:#FFFFFF;
+			left: 0.2%;
+			top: 10%;
+		}
+		a:link {
+			text-decoration:none;
+			margin-left:1%;
+			margin-right:1%;
+		}
+		a:visited {text-decoration:none;}
+		a:hover {text-decoration:underline;}
+		a:active {text-decoration:underline;}
+		#canvas-holder {
+			width:99%;
+			height:93%;
+		}
+	</style>
+</head>
+<body>
+
+	<div id="buttons">
+		<a href="http://en.wikipedia.org/wiki/Conway%27s_game_of_life">Conway's Game of Life</a>
+		<input id="random" type="button" value="New Random Fill" onclick="conway.randomSeed();" />
+		<input id="clear" type="button" value="Clear" onclick="conway.clear();" />
+		<input id="glider" type="button" value="Drop a glider..." onclick="conway.glider();" />
+		<input id="gliderGun" type="button" value="Drop a glider gun..." onclick="conway.gliderGun();" />
+		<input id="puffer" type="button" value="Drop a puffer..." onclick="conway.puffer();" />
+	</div>
+
+	<div id="canvas-holder" >
+	</div>
+
+	<script type="text/javascript">
+
+		// get window size
+		var div = document.getElementById("canvas-holder");
+		var windowWidth = div.clientWidth;
+		var windowHeight = div.clientHeight;
+
+		// conway's constructor takes an initial state
+		// initialize the state array and fill with random boolean values
+		var cstate = [];
+		for (var x = 0; x < windowWidth; x++) {
+			cstate[x] = [];
+			for (var y = 0; y < windowHeight; y++) {
+				cstate[x][y] = Math.random() < .5;
+			}
+		}
+		// console.log("state");
+		// console.log(state);
+
+
+		var conway = {};
+		conway.state = cstate;
+		conway.width = cstate.length;
+		conway.height = cstate[0].length;
+		// fill the state with falses
+		conway.clear = function() {
+			for (var x = 0; x < conway.width; x++) {
+				for (var y = 0; y < conway.height; y++) {
+					conway.state[x][y] = false;
+				}
+			}
+		} // end clear
+		// refill the state randomly
+		conway.randomSeed = function() {
+			for (var x = 0; x < conway.width; x++) {
+				for (var y = 0; y < conway.height; y++) {
+						conway.state[x][y] = Math.random() < .5;; // increment if the cell is true
+					}
+				}
+		} // end randomSeed
+		// count all of the living cells
+		conway.count = function() {
+			var count = 0;
+			for (var x = 0; x < conway.width; x++) {
+				for (var y = 0; y < conway.height; y++) {
+					if (conway.state[x][y]) {
+						count++; // increment if the cell is true
+					}
+				}
+			}
+			return count;
+		} // end count
+		// count a cell's living neighbors
+		conway.neighbors = function(x, y) {
+			var n = 0;
+			if (x > 0 && x < conway.width - 1 && y > 0 && y < conway.height) {
+				for (var i = -1; i <= 1; i++) {
+					for (var p = -1; p <= 1; p++) {
+						if (!(i == 0 && p == 0) && conway.state[x + i][y + p]) n++;
+					}
+				};
+			} else if (x == 0 && y == 0) {
+				if (conway.state[x][y + 1]) n++;
+				if (conway.state[x + 1][y]) n++;
+				if (conway.state[x + 1][y + 1]) n++;
+			} else if (x == 0 && y == conway.height - 1) {
+				if (conway.state[x][y - 1]) n++;
+				if (conway.state[x + 1][y - 1]) n++;
+				if (conway.state[x + 1][y]) n++;
+			} else if (x == conway.width - 1 && y == 0) {
+				if (conway.state[x - 1][y]) n++;
+				if (conway.state[x - 1][y + 1]) n++;
+				if (conway.state[x][y + 1]) n++;
+			} else if (x == conway.width - 1 && y == conway.height - 1) {
+				if (conway.state[x][y - 1]) n++;
+				if (conway.state[x - 1][y]) n++;
+				if (conway.state[x - 1][y - 1]) n++;
+			} else if (x == 0) {
+				if (conway.state[x][y + 1]) n++;
+				if (conway.state[x][y - 1]) n++;
+				if (conway.state[x + 1][y + 1]) n++;
+				if (conway.state[x + 1][y - 1]) n++;
+				if (conway.state[x + 1][y]) n++;
+			} else if (x == conway.width - 1) {
+				if (conway.state[x][y + 1]) n++;
+				if (conway.state[x][y - 1]) n++;
+				if (conway.state[x - 1][y + 1]) n++;
+				if (conway.state[x - 1][y - 1]) n++;
+				if (conway.state[x - 1][y]) n++;
+			} else if (y == 0) {
+				if (conway.state[x + 1][y]) n++;
+				if (conway.state[x - 1][y]) n++;
+				if (conway.state[x + 1][y + 1]) n++;
+				if (conway.state[x - 1][y + 1]) n++;
+				if (conway.state[x][y + 1]) n++;
+			} else if (y == conway.height - 1) {
+				if (conway.state[x + 1][y]) n++;
+				if (conway.state[x - 1][y]) n++;
+				if (conway.state[x + 1][y - 1]) n++;
+				if (conway.state[x - 1][y - 1]) n++;
+				if (conway.state[x][y - 1]) n++;
+			}
+			return n;
+		}; // end neighbors
+		// see if the cell at x, y will live to the next generation
+		conway.lives = function(x, y) {
+			var neighbors = conway.neighbors(x, y);
+			if (conway.state[x][y]) {
+				return (neighbors > 1 && neighbors < 4);
+			} else {
+				return (neighbors == 3);
+			}
+		}; // end lives
+		// transition to the next state
+		// if a cell is alive, it stays alive if it has 2 or 3 neighbors
+		// a dead cell comes to life with exactly 3 neighbors
+		conway.next = function() {
+			var next_state = new Array(conway.width);
+
+			for (var x = 0; x < conway.width; x++) {
+				next_state[x] = new Array(conway.height);
+				for (var y = 0; y < conway.height; y++) {
+					next_state[x][y] = conway.lives(x, y);
+				}
+			};
+			conway.state = next_state;
+			return conway.state;
+		}; // end next
+		
+		conway.toString = function() {
+			var out = "";
+			for (var y = 0; y < height; y++) {
+				for (var x = 0; x < width; x++) {
+					if (conway.state[x][y]) {
+						out = out + "+ ";
+					} else {
+						out = out + "  ";
+					}
+				}
+				out = out + "\n";
+			};
+			return out;
+		};
+		conway.glider = function() {
+			var xcenter = Math.floor(Math.random() * (conway.width * 0.8 + 1) + conway.width * 0.1);
+			var ycenter = Math.floor(Math.random() * (conway.height * 0.8 + 1) + conway.height * 0.1);
+			conway.state[xcenter][ycenter + 1] = true;
+			conway.state[xcenter - 1][ycenter] = true;
+			conway.state[xcenter - 1][ycenter - 1] = true;
+			conway.state[xcenter][ycenter - 1] = true;
+			conway.state[xcenter + 1][ycenter - 1] = true;
+		};
+
+		conway.gliderGun = function() {
+			var xcenter = Math.floor(Math.random() * (conway.width * 0.8 + 1) + conway.width * 0.1);
+			var ycenter = Math.floor(Math.random() * (conway.height * 0.8 + 1) + conway.height * 0.1);
+			conway.state[xcenter + 6][ycenter + -4] = true;
+			conway.state[xcenter + 4][ycenter + -3] = true;
+			conway.state[xcenter + 6][ycenter + -3] = true;
+			conway.state[xcenter + -6][ycenter + -2] = true;
+			conway.state[xcenter + -5][ycenter + -2] = true;
+			conway.state[xcenter + 2][ycenter + -2] = true;
+			conway.state[xcenter + 3][ycenter + -2] = true;
+			conway.state[xcenter + 16][ycenter + -2] = true;
+			conway.state[xcenter + 17][ycenter + -2] = true;
+			conway.state[xcenter + -7][ycenter + -1] = true;
+			conway.state[xcenter + -3][ycenter + -1] = true;
+			conway.state[xcenter + 2][ycenter + -1] = true;
+			conway.state[xcenter + 3][ycenter + -1] = true;
+			conway.state[xcenter + 16][ycenter + -1] = true;
+			conway.state[xcenter + 17][ycenter + -1] = true;
+			conway.state[xcenter + -18][ycenter + 0] = true;
+			conway.state[xcenter + -17][ycenter + 0] = true;
+			conway.state[xcenter + -8][ycenter + 0] = true;
+			conway.state[xcenter + -2][ycenter + 0] = true;
+			conway.state[xcenter + 2][ycenter + 0] = true;
+			conway.state[xcenter + 3][ycenter + 0] = true;
+			conway.state[xcenter + -18][ycenter + 1] = true;
+			conway.state[xcenter + -17][ycenter + 1] = true;
+			conway.state[xcenter + -8][ycenter + 1] = true;
+			conway.state[xcenter + -4][ycenter + 1] = true;
+			conway.state[xcenter + -2][ycenter + 1] = true;
+			conway.state[xcenter + -1][ycenter + 1] = true;
+			conway.state[xcenter + 4][ycenter + 1] = true;
+			conway.state[xcenter + 6][ycenter + 1] = true;
+			conway.state[xcenter + -8][ycenter + 2] = true;
+			conway.state[xcenter + -2][ycenter + 2] = true;
+			conway.state[xcenter + 6][ycenter + 2] = true;
+			conway.state[xcenter + -7][ycenter + 3] = true;
+			conway.state[xcenter + -3][ycenter + 3] = true;
+			conway.state[xcenter + -6][ycenter + 4] = true;
+			conway.state[xcenter + -5][ycenter + 4] = true;
+		};
+
+		conway.puffer = function() {
+			var xcenter = Math.floor(Math.random() * (conway.width * 0.7 + 1) + conway.width * 0.15);
+			var ycenter = Math.floor(Math.random() * (conway.height * 0.8 + 1) + conway.height * 0.1);
+			conway.state[xcenter + 0][ycenter + 43] = true;
+			conway.state[xcenter + 1][ycenter + 41] = true;
+			conway.state[xcenter + 1][ycenter + 43] = true;
+			conway.state[xcenter + 2][ycenter + 42] = true;
+			conway.state[xcenter + 2][ycenter + 43] = true;
+			conway.state[xcenter + 3][ycenter + 84] = true;
+			conway.state[xcenter + 4][ycenter + 82] = true;
+			conway.state[xcenter + 4][ycenter + 83] = true;
+			conway.state[xcenter + 5][ycenter + 83] = true;
+			conway.state[xcenter + 5][ycenter + 84] = true;
+			conway.state[xcenter + 10][ycenter + 58] = true;
+			conway.state[xcenter + 10][ycenter + 59] = true;
+			conway.state[xcenter + 11][ycenter + 57] = true;
+			conway.state[xcenter + 11][ycenter + 59] = true;
+			conway.state[xcenter + 12][ycenter + 46] = true;
+			conway.state[xcenter + 12][ycenter + 47] = true;
+			conway.state[xcenter + 12][ycenter + 57] = true;
+			conway.state[xcenter + 12][ycenter + 58] = true;
+			conway.state[xcenter + 12][ycenter + 68] = true;
+			conway.state[xcenter + 12][ycenter + 69] = true;
+			conway.state[xcenter + 13][ycenter + 46] = true;
+			conway.state[xcenter + 13][ycenter + 47] = true;
+			conway.state[xcenter + 13][ycenter + 68] = true;
+			conway.state[xcenter + 13][ycenter + 70] = true;
+			conway.state[xcenter + 14][ycenter + 69] = true;
+			conway.state[xcenter + 14][ycenter + 70] = true;
+			conway.state[xcenter + 14][ycenter + 80] = true;
+			conway.state[xcenter + 14][ycenter + 81] = true;
+			conway.state[xcenter + 15][ycenter + 28] = true;
+			conway.state[xcenter + 15][ycenter + 80] = true;
+			conway.state[xcenter + 15][ycenter + 81] = true;
+			conway.state[xcenter + 16][ycenter + 26] = true;
+			conway.state[xcenter + 16][ycenter + 28] = true;
+			conway.state[xcenter + 17][ycenter + 15] = true;
+			conway.state[xcenter + 17][ycenter + 17] = true;
+			conway.state[xcenter + 17][ycenter + 27] = true;
+			conway.state[xcenter + 17][ycenter + 28] = true;
+			conway.state[xcenter + 18][ycenter + 14] = true;
+			conway.state[xcenter + 18][ycenter + 99] = true;
+			conway.state[xcenter + 19][ycenter + 14] = true;
+			conway.state[xcenter + 19][ycenter + 18] = true;
+			conway.state[xcenter + 19][ycenter + 97] = true;
+			conway.state[xcenter + 19][ycenter + 98] = true;
+			conway.state[xcenter + 20][ycenter + 14] = true;
+			conway.state[xcenter + 20][ycenter + 98] = true;
+			conway.state[xcenter + 20][ycenter + 99] = true;
+			conway.state[xcenter + 21][ycenter + 14] = true;
+			conway.state[xcenter + 21][ycenter + 17] = true;
+			conway.state[xcenter + 21][ycenter + 110] = true;
+			conway.state[xcenter + 21][ycenter + 112] = true;
+			conway.state[xcenter + 22][ycenter + 14] = true;
+			conway.state[xcenter + 22][ycenter + 15] = true;
+			conway.state[xcenter + 22][ycenter + 16] = true;
+			conway.state[xcenter + 22][ycenter + 113] = true;
+			conway.state[xcenter + 23][ycenter + 109] = true;
+			conway.state[xcenter + 23][ycenter + 113] = true;
+			conway.state[xcenter + 24][ycenter + 113] = true;
+			conway.state[xcenter + 25][ycenter + 18] = true;
+			conway.state[xcenter + 25][ycenter + 110] = true;
+			conway.state[xcenter + 25][ycenter + 113] = true;
+			conway.state[xcenter + 26][ycenter + 16] = true;
+			conway.state[xcenter + 26][ycenter + 18] = true;
+			conway.state[xcenter + 26][ycenter + 22] = true;
+			conway.state[xcenter + 26][ycenter + 111] = true;
+			conway.state[xcenter + 26][ycenter + 112] = true;
+			conway.state[xcenter + 26][ycenter + 113] = true;
+			conway.state[xcenter + 27][ycenter + 17] = true;
+			conway.state[xcenter + 27][ycenter + 18] = true;
+			conway.state[xcenter + 27][ycenter + 22] = true;
+			conway.state[xcenter + 28][ycenter + 43] = true;
+			conway.state[xcenter + 28][ycenter + 109] = true;
+			conway.state[xcenter + 29][ycenter + 43] = true;
+			conway.state[xcenter + 29][ycenter + 44] = true;
+			conway.state[xcenter + 29][ycenter + 107] = true;
+			conway.state[xcenter + 29][ycenter + 108] = true;
+			conway.state[xcenter + 30][ycenter + 13] = true;
+			conway.state[xcenter + 30][ycenter + 43] = true;
+			conway.state[xcenter + 30][ycenter + 44] = true;
+			conway.state[xcenter + 30][ycenter + 45] = true;
+			conway.state[xcenter + 30][ycenter + 84] = true;
+			conway.state[xcenter + 30][ycenter + 108] = true;
+			conway.state[xcenter + 30][ycenter + 109] = true;
+			conway.state[xcenter + 31][ycenter + 11] = true;
+			conway.state[xcenter + 31][ycenter + 13] = true;
+			conway.state[xcenter + 31][ycenter + 19] = true;
+			conway.state[xcenter + 31][ycenter + 20] = true;
+			conway.state[xcenter + 31][ycenter + 24] = true;
+			conway.state[xcenter + 31][ycenter + 25] = true;
+			conway.state[xcenter + 31][ycenter + 37] = true;
+			conway.state[xcenter + 31][ycenter + 45] = true;
+			conway.state[xcenter + 31][ycenter + 46] = true;
+			conway.state[xcenter + 31][ycenter + 83] = true;
+			conway.state[xcenter + 31][ycenter + 84] = true;
+			conway.state[xcenter + 32][ycenter + 12] = true;
+			conway.state[xcenter + 32][ycenter + 13] = true;
+			conway.state[xcenter + 32][ycenter + 36] = true;
+			conway.state[xcenter + 32][ycenter + 37] = true;
+			conway.state[xcenter + 32][ycenter + 38] = true;
+			conway.state[xcenter + 32][ycenter + 40] = true;
+			conway.state[xcenter + 32][ycenter + 44] = true;
+			conway.state[xcenter + 32][ycenter + 45] = true;
+			conway.state[xcenter + 32][ycenter + 82] = true;
+			conway.state[xcenter + 32][ycenter + 83] = true;
+			conway.state[xcenter + 32][ycenter + 84] = true;
+			conway.state[xcenter + 33][ycenter + 35] = true;
+			conway.state[xcenter + 33][ycenter + 36] = true;
+			conway.state[xcenter + 33][ycenter + 38] = true;
+			conway.state[xcenter + 33][ycenter + 39] = true;
+			conway.state[xcenter + 33][ycenter + 40] = true;
+			conway.state[xcenter + 33][ycenter + 41] = true;
+			conway.state[xcenter + 33][ycenter + 43] = true;
+			conway.state[xcenter + 33][ycenter + 44] = true;
+			conway.state[xcenter + 33][ycenter + 57] = true;
+			conway.state[xcenter + 33][ycenter + 58] = true;
+			conway.state[xcenter + 33][ycenter + 81] = true;
+			conway.state[xcenter + 33][ycenter + 82] = true;
+			conway.state[xcenter + 33][ycenter + 90] = true;
+			conway.state[xcenter + 33][ycenter + 114] = true;
+			conway.state[xcenter + 34][ycenter + 22] = true;
+			conway.state[xcenter + 34][ycenter + 29] = true;
+			conway.state[xcenter + 34][ycenter + 30] = true;
+			conway.state[xcenter + 34][ycenter + 36] = true;
+			conway.state[xcenter + 34][ycenter + 38] = true;
+			conway.state[xcenter + 34][ycenter + 39] = true;
+			conway.state[xcenter + 34][ycenter + 41] = true;
+			conway.state[xcenter + 34][ycenter + 42] = true;
+			conway.state[xcenter + 34][ycenter + 56] = true;
+			conway.state[xcenter + 34][ycenter + 59] = true;
+			conway.state[xcenter + 34][ycenter + 82] = true;
+			conway.state[xcenter + 34][ycenter + 83] = true;
+			conway.state[xcenter + 34][ycenter + 87] = true;
+			conway.state[xcenter + 34][ycenter + 89] = true;
+			conway.state[xcenter + 34][ycenter + 90] = true;
+			conway.state[xcenter + 34][ycenter + 91] = true;
+			conway.state[xcenter + 34][ycenter + 112] = true;
+			conway.state[xcenter + 34][ycenter + 113] = true;
+			conway.state[xcenter + 35][ycenter + 8] = true;
+			conway.state[xcenter + 35][ycenter + 21] = true;
+			conway.state[xcenter + 35][ycenter + 23] = true;
+			conway.state[xcenter + 35][ycenter + 28] = true;
+			conway.state[xcenter + 35][ycenter + 29] = true;
+			conway.state[xcenter + 35][ycenter + 30] = true;
+			conway.state[xcenter + 35][ycenter + 37] = true;
+			conway.state[xcenter + 35][ycenter + 38] = true;
+			conway.state[xcenter + 35][ycenter + 39] = true;
+			conway.state[xcenter + 35][ycenter + 41] = true;
+			conway.state[xcenter + 35][ycenter + 46] = true;
+			conway.state[xcenter + 35][ycenter + 57] = true;
+			conway.state[xcenter + 35][ycenter + 58] = true;
+			conway.state[xcenter + 35][ycenter + 69] = true;
+			conway.state[xcenter + 35][ycenter + 70] = true;
+			conway.state[xcenter + 35][ycenter + 83] = true;
+			conway.state[xcenter + 35][ycenter + 84] = true;
+			conway.state[xcenter + 35][ycenter + 86] = true;
+			conway.state[xcenter + 35][ycenter + 87] = true;
+			conway.state[xcenter + 35][ycenter + 88] = true;
+			conway.state[xcenter + 35][ycenter + 89] = true;
+			conway.state[xcenter + 35][ycenter + 91] = true;
+			conway.state[xcenter + 35][ycenter + 92] = true;
+			conway.state[xcenter + 35][ycenter + 105] = true;
+			conway.state[xcenter + 35][ycenter + 113] = true;
+			conway.state[xcenter + 35][ycenter + 114] = true;
+			conway.state[xcenter + 36][ycenter + 6] = true;
+			conway.state[xcenter + 36][ycenter + 8] = true;
+			conway.state[xcenter + 36][ycenter + 21] = true;
+			conway.state[xcenter + 36][ycenter + 23] = true;
+			conway.state[xcenter + 36][ycenter + 28] = true;
+			conway.state[xcenter + 36][ycenter + 29] = true;
+			conway.state[xcenter + 36][ycenter + 31] = true;
+			conway.state[xcenter + 36][ycenter + 38] = true;
+			conway.state[xcenter + 36][ycenter + 39] = true;
+			conway.state[xcenter + 36][ycenter + 45] = true;
+			conway.state[xcenter + 36][ycenter + 47] = true;
+			conway.state[xcenter + 36][ycenter + 68] = true;
+			conway.state[xcenter + 36][ycenter + 71] = true;
+			conway.state[xcenter + 36][ycenter + 85] = true;
+			conway.state[xcenter + 36][ycenter + 86] = true;
+			conway.state[xcenter + 36][ycenter + 88] = true;
+			conway.state[xcenter + 36][ycenter + 89] = true;
+			conway.state[xcenter + 36][ycenter + 91] = true;
+			conway.state[xcenter + 36][ycenter + 97] = true;
+			conway.state[xcenter + 36][ycenter + 98] = true;
+			conway.state[xcenter + 36][ycenter + 104] = true;
+			conway.state[xcenter + 36][ycenter + 105] = true;
+			conway.state[xcenter + 36][ycenter + 106] = true;
+			conway.state[xcenter + 37][ycenter + 7] = true;
+			conway.state[xcenter + 37][ycenter + 8] = true;
+			conway.state[xcenter + 37][ycenter + 22] = true;
+			conway.state[xcenter + 37][ycenter + 29] = true;
+			conway.state[xcenter + 37][ycenter + 30] = true;
+			conway.state[xcenter + 37][ycenter + 31] = true;
+			conway.state[xcenter + 37][ycenter + 45] = true;
+			conway.state[xcenter + 37][ycenter + 47] = true;
+			conway.state[xcenter + 37][ycenter + 48] = true;
+			conway.state[xcenter + 37][ycenter + 69] = true;
+			conway.state[xcenter + 37][ycenter + 70] = true;
+			conway.state[xcenter + 37][ycenter + 81] = true;
+			conway.state[xcenter + 37][ycenter + 86] = true;
+			conway.state[xcenter + 37][ycenter + 88] = true;
+			conway.state[xcenter + 37][ycenter + 89] = true;
+			conway.state[xcenter + 37][ycenter + 90] = true;
+			conway.state[xcenter + 37][ycenter + 97] = true;
+			conway.state[xcenter + 37][ycenter + 98] = true;
+			conway.state[xcenter + 37][ycenter + 99] = true;
+			conway.state[xcenter + 37][ycenter + 104] = true;
+			conway.state[xcenter + 37][ycenter + 105] = true;
+			conway.state[xcenter + 37][ycenter + 106] = true;
+			conway.state[xcenter + 38][ycenter + 22] = true;
+			conway.state[xcenter + 38][ycenter + 30] = true;
+			conway.state[xcenter + 38][ycenter + 46] = true;
+			conway.state[xcenter + 38][ycenter + 47] = true;
+			conway.state[xcenter + 38][ycenter + 80] = true;
+			conway.state[xcenter + 38][ycenter + 82] = true;
+			conway.state[xcenter + 38][ycenter + 88] = true;
+			conway.state[xcenter + 38][ycenter + 89] = true;
+			conway.state[xcenter + 38][ycenter + 96] = true;
+			conway.state[xcenter + 38][ycenter + 98] = true;
+			conway.state[xcenter + 38][ycenter + 99] = true;
+			conway.state[xcenter + 38][ycenter + 102] = true;
+			conway.state[xcenter + 38][ycenter + 104] = true;
+			conway.state[xcenter + 38][ycenter + 106] = true;
+			conway.state[xcenter + 38][ycenter + 108] = true;
+			conway.state[xcenter + 38][ycenter + 119] = true;
+			conway.state[xcenter + 39][ycenter + 21] = true;
+			conway.state[xcenter + 39][ycenter + 23] = true;
+			conway.state[xcenter + 39][ycenter + 79] = true;
+			conway.state[xcenter + 39][ycenter + 80] = true;
+			conway.state[xcenter + 39][ycenter + 82] = true;
+			conway.state[xcenter + 39][ycenter + 96] = true;
+			conway.state[xcenter + 39][ycenter + 97] = true;
+			conway.state[xcenter + 39][ycenter + 98] = true;
+			conway.state[xcenter + 39][ycenter + 103] = true;
+			conway.state[xcenter + 39][ycenter + 107] = true;
+			conway.state[xcenter + 39][ycenter + 117] = true;
+			conway.state[xcenter + 39][ycenter + 118] = true;
+			conway.state[xcenter + 40][ycenter + 20] = true;
+			conway.state[xcenter + 40][ycenter + 24] = true;
+			conway.state[xcenter + 40][ycenter + 58] = true;
+			conway.state[xcenter + 40][ycenter + 59] = true;
+			conway.state[xcenter + 40][ycenter + 80] = true;
+			conway.state[xcenter + 40][ycenter + 81] = true;
+			conway.state[xcenter + 40][ycenter + 97] = true;
+			conway.state[xcenter + 40][ycenter + 103] = true;
+			conway.state[xcenter + 40][ycenter + 107] = true;
+			conway.state[xcenter + 40][ycenter + 118] = true;
+			conway.state[xcenter + 40][ycenter + 119] = true;
+			conway.state[xcenter + 41][ycenter + 21] = true;
+			conway.state[xcenter + 41][ycenter + 23] = true;
+			conway.state[xcenter + 41][ycenter + 41] = true;
+			conway.state[xcenter + 41][ycenter + 47] = true;
+			conway.state[xcenter + 41][ycenter + 57] = true;
+			conway.state[xcenter + 41][ycenter + 59] = true;
+			conway.state[xcenter + 42][ycenter + 1] = true;
+			conway.state[xcenter + 42][ycenter + 3] = true;
+			conway.state[xcenter + 42][ycenter + 22] = true;
+			conway.state[xcenter + 42][ycenter + 41] = true;
+			conway.state[xcenter + 42][ycenter + 42] = true;
+			conway.state[xcenter + 42][ycenter + 47] = true;
+			conway.state[xcenter + 42][ycenter + 57] = true;
+			conway.state[xcenter + 42][ycenter + 58] = true;
+			conway.state[xcenter + 42][ycenter + 68] = true;
+			conway.state[xcenter + 42][ycenter + 69] = true;
+			conway.state[xcenter + 43][ycenter + 0] = true;
+			conway.state[xcenter + 43][ycenter + 40] = true;
+			conway.state[xcenter + 43][ycenter + 42] = true;
+			conway.state[xcenter + 43][ycenter + 47] = true;
+			conway.state[xcenter + 43][ycenter + 68] = true;
+			conway.state[xcenter + 43][ycenter + 70] = true;
+			conway.state[xcenter + 43][ycenter + 80] = true;
+			conway.state[xcenter + 43][ycenter + 86] = true;
+			conway.state[xcenter + 44][ycenter + 0] = true;
+			conway.state[xcenter + 44][ycenter + 19] = true;
+			conway.state[xcenter + 44][ycenter + 20] = true;
+			conway.state[xcenter + 44][ycenter + 24] = true;
+			conway.state[xcenter + 44][ycenter + 25] = true;
+			conway.state[xcenter + 44][ycenter + 69] = true;
+			conway.state[xcenter + 44][ycenter + 70] = true;
+			conway.state[xcenter + 44][ycenter + 80] = true;
+			conway.state[xcenter + 44][ycenter + 85] = true;
+			conway.state[xcenter + 44][ycenter + 86] = true;
+			conway.state[xcenter + 44][ycenter + 104] = true;
+			conway.state[xcenter + 44][ycenter + 105] = true;
+			conway.state[xcenter + 44][ycenter + 106] = true;
+			conway.state[xcenter + 45][ycenter + 0] = true;
+			conway.state[xcenter + 45][ycenter + 3] = true;
+			conway.state[xcenter + 45][ycenter + 10] = true;
+			conway.state[xcenter + 45][ycenter + 11] = true;
+			conway.state[xcenter + 45][ycenter + 12] = true;
+			conway.state[xcenter + 45][ycenter + 19] = true;
+			conway.state[xcenter + 45][ycenter + 20] = true;
+			conway.state[xcenter + 45][ycenter + 21] = true;
+			conway.state[xcenter + 45][ycenter + 23] = true;
+			conway.state[xcenter + 45][ycenter + 24] = true;
+			conway.state[xcenter + 45][ycenter + 25] = true;
+			conway.state[xcenter + 45][ycenter + 46] = true;
+			conway.state[xcenter + 45][ycenter + 48] = true;
+			conway.state[xcenter + 45][ycenter + 80] = true;
+			conway.state[xcenter + 45][ycenter + 85] = true;
+			conway.state[xcenter + 45][ycenter + 87] = true;
+			conway.state[xcenter + 45][ycenter + 104] = true;
+			conway.state[xcenter + 45][ycenter + 105] = true;
+			conway.state[xcenter + 45][ycenter + 106] = true;
+			conway.state[xcenter + 46][ycenter + 0] = true;
+			conway.state[xcenter + 46][ycenter + 1] = true;
+			conway.state[xcenter + 46][ycenter + 2] = true;
+			conway.state[xcenter + 46][ycenter + 10] = true;
+			conway.state[xcenter + 46][ycenter + 11] = true;
+			conway.state[xcenter + 46][ycenter + 12] = true;
+			conway.state[xcenter + 46][ycenter + 18] = true;
+			conway.state[xcenter + 46][ycenter + 20] = true;
+			conway.state[xcenter + 46][ycenter + 21] = true;
+			conway.state[xcenter + 46][ycenter + 23] = true;
+			conway.state[xcenter + 46][ycenter + 24] = true;
+			conway.state[xcenter + 46][ycenter + 26] = true;
+			conway.state[xcenter + 46][ycenter + 45] = true;
+			conway.state[xcenter + 46][ycenter + 46] = true;
+			conway.state[xcenter + 46][ycenter + 48] = true;
+			conway.state[xcenter + 46][ycenter + 49] = true;
+			conway.state[xcenter + 46][ycenter + 105] = true;
+			conway.state[xcenter + 46][ycenter + 116] = true;
+			conway.state[xcenter + 46][ycenter + 117] = true;
+			conway.state[xcenter + 47][ycenter + 9] = true;
+			conway.state[xcenter + 47][ycenter + 12] = true;
+			conway.state[xcenter + 47][ycenter + 13] = true;
+			conway.state[xcenter + 47][ycenter + 18] = true;
+			conway.state[xcenter + 47][ycenter + 19] = true;
+			conway.state[xcenter + 47][ycenter + 20] = true;
+			conway.state[xcenter + 47][ycenter + 24] = true;
+			conway.state[xcenter + 47][ycenter + 25] = true;
+			conway.state[xcenter + 47][ycenter + 26] = true;
+			conway.state[xcenter + 47][ycenter + 45] = true;
+			conway.state[xcenter + 47][ycenter + 49] = true;
+			conway.state[xcenter + 47][ycenter + 79] = true;
+			conway.state[xcenter + 47][ycenter + 81] = true;
+			conway.state[xcenter + 47][ycenter + 115] = true;
+			conway.state[xcenter + 47][ycenter + 116] = true;
+			conway.state[xcenter + 47][ycenter + 118] = true;
+			conway.state[xcenter + 47][ycenter + 119] = true;
+			conway.state[xcenter + 47][ycenter + 126] = true;
+			conway.state[xcenter + 47][ycenter + 127] = true;
+			conway.state[xcenter + 48][ycenter + 9] = true;
+			conway.state[xcenter + 48][ycenter + 12] = true;
+			conway.state[xcenter + 48][ycenter + 13] = true;
+			conway.state[xcenter + 48][ycenter + 19] = true;
+			conway.state[xcenter + 48][ycenter + 25] = true;
+			conway.state[xcenter + 48][ycenter + 78] = true;
+			conway.state[xcenter + 48][ycenter + 79] = true;
+			conway.state[xcenter + 48][ycenter + 81] = true;
+			conway.state[xcenter + 48][ycenter + 82] = true;
+			conway.state[xcenter + 48][ycenter + 102] = true;
+			conway.state[xcenter + 48][ycenter + 104] = true;
+			conway.state[xcenter + 48][ycenter + 106] = true;
+			conway.state[xcenter + 48][ycenter + 108] = true;
+			conway.state[xcenter + 48][ycenter + 115] = true;
+			conway.state[xcenter + 48][ycenter + 116] = true;
+			conway.state[xcenter + 48][ycenter + 118] = true;
+			conway.state[xcenter + 48][ycenter + 119] = true;
+			conway.state[xcenter + 48][ycenter + 126] = true;
+			conway.state[xcenter + 48][ycenter + 127] = true;
+			conway.state[xcenter + 48][ycenter + 128] = true;
+			conway.state[xcenter + 49][ycenter + 12] = true;
+			conway.state[xcenter + 49][ycenter + 78] = true;
+			conway.state[xcenter + 49][ycenter + 82] = true;
+			conway.state[xcenter + 49][ycenter + 101] = true;
+			conway.state[xcenter + 49][ycenter + 109] = true;
+			conway.state[xcenter + 49][ycenter + 115] = true;
+			conway.state[xcenter + 49][ycenter + 116] = true;
+			conway.state[xcenter + 49][ycenter + 118] = true;
+			conway.state[xcenter + 49][ycenter + 119] = true;
+			conway.state[xcenter + 49][ycenter + 125] = true;
+			conway.state[xcenter + 49][ycenter + 127] = true;
+			conway.state[xcenter + 49][ycenter + 128] = true;
+			conway.state[xcenter + 50][ycenter + 8] = true;
+			conway.state[xcenter + 50][ycenter + 47] = true;
+			conway.state[xcenter + 50][ycenter + 101] = true;
+			conway.state[xcenter + 50][ycenter + 109] = true;
+			conway.state[xcenter + 50][ycenter + 117] = true;
+			conway.state[xcenter + 50][ycenter + 125] = true;
+			conway.state[xcenter + 50][ycenter + 126] = true;
+			conway.state[xcenter + 50][ycenter + 127] = true;
+			conway.state[xcenter + 51][ycenter + 8] = true;
+			conway.state[xcenter + 51][ycenter + 11] = true;
+			conway.state[xcenter + 51][ycenter + 16] = true;
+			conway.state[xcenter + 51][ycenter + 17] = true;
+			conway.state[xcenter + 51][ycenter + 47] = true;
+			conway.state[xcenter + 51][ycenter + 101] = true;
+			conway.state[xcenter + 51][ycenter + 104] = true;
+			conway.state[xcenter + 51][ycenter + 106] = true;
+			conway.state[xcenter + 51][ycenter + 109] = true;
+			conway.state[xcenter + 51][ycenter + 126] = true;
+			conway.state[xcenter + 52][ycenter + 8] = true;
+			conway.state[xcenter + 52][ycenter + 10] = true;
+			conway.state[xcenter + 52][ycenter + 15] = true;
+			conway.state[xcenter + 52][ycenter + 16] = true;
+			conway.state[xcenter + 52][ycenter + 17] = true;
+			conway.state[xcenter + 52][ycenter + 46] = true;
+			conway.state[xcenter + 52][ycenter + 48] = true;
+			conway.state[xcenter + 52][ycenter + 80] = true;
+			conway.state[xcenter + 52][ycenter + 101] = true;
+			conway.state[xcenter + 52][ycenter + 102] = true;
+			conway.state[xcenter + 52][ycenter + 103] = true;
+			conway.state[xcenter + 52][ycenter + 107] = true;
+			conway.state[xcenter + 52][ycenter + 108] = true;
+			conway.state[xcenter + 52][ycenter + 109] = true;
+			conway.state[xcenter + 53][ycenter + 9] = true;
+			conway.state[xcenter + 53][ycenter + 10] = true;
+			conway.state[xcenter + 53][ycenter + 15] = true;
+			conway.state[xcenter + 53][ycenter + 16] = true;
+			conway.state[xcenter + 53][ycenter + 18] = true;
+			conway.state[xcenter + 53][ycenter + 46] = true;
+			conway.state[xcenter + 53][ycenter + 47] = true;
+			conway.state[xcenter + 53][ycenter + 48] = true;
+			conway.state[xcenter + 53][ycenter + 80] = true;
+			conway.state[xcenter + 53][ycenter + 119] = true;
+			conway.state[xcenter + 53][ycenter + 120] = true;
+			conway.state[xcenter + 54][ycenter + 8] = true;
+			conway.state[xcenter + 54][ycenter + 9] = true;
+			conway.state[xcenter + 54][ycenter + 10] = true;
+			conway.state[xcenter + 54][ycenter + 16] = true;
+			conway.state[xcenter + 54][ycenter + 17] = true;
+			conway.state[xcenter + 54][ycenter + 18] = true;
+			conway.state[xcenter + 54][ycenter + 46] = true;
+			conway.state[xcenter + 54][ycenter + 47] = true;
+			conway.state[xcenter + 54][ycenter + 48] = true;
+			conway.state[xcenter + 54][ycenter + 79] = true;
+			conway.state[xcenter + 54][ycenter + 81] = true;
+			conway.state[xcenter + 54][ycenter + 119] = true;
+			conway.state[xcenter + 54][ycenter + 120] = true;
+			conway.state[xcenter + 55][ycenter + 8] = true;
+			conway.state[xcenter + 55][ycenter + 9] = true;
+			conway.state[xcenter + 55][ycenter + 10] = true;
+			conway.state[xcenter + 55][ycenter + 17] = true;
+			conway.state[xcenter + 55][ycenter + 79] = true;
+			conway.state[xcenter + 55][ycenter + 80] = true;
+			conway.state[xcenter + 55][ycenter + 81] = true;
+			conway.state[xcenter + 55][ycenter + 110] = true;
+			conway.state[xcenter + 55][ycenter + 112] = true;
+			conway.state[xcenter + 56][ycenter + 7] = true;
+			conway.state[xcenter + 56][ycenter + 9] = true;
+			conway.state[xcenter + 56][ycenter + 10] = true;
+			conway.state[xcenter + 56][ycenter + 36] = true;
+			conway.state[xcenter + 56][ycenter + 42] = true;
+			conway.state[xcenter + 56][ycenter + 44] = true;
+			conway.state[xcenter + 56][ycenter + 50] = true;
+			conway.state[xcenter + 56][ycenter + 52] = true;
+			conway.state[xcenter + 56][ycenter + 79] = true;
+			conway.state[xcenter + 56][ycenter + 80] = true;
+			conway.state[xcenter + 56][ycenter + 81] = true;
+			conway.state[xcenter + 56][ycenter + 109] = true;
+			conway.state[xcenter + 57][ycenter + 11] = true;
+			conway.state[xcenter + 57][ycenter + 36] = true;
+			conway.state[xcenter + 57][ycenter + 37] = true;
+			conway.state[xcenter + 57][ycenter + 45] = true;
+			conway.state[xcenter + 57][ycenter + 49] = true;
+			conway.state[xcenter + 57][ycenter + 109] = true;
+			conway.state[xcenter + 58][ycenter + 7] = true;
+			conway.state[xcenter + 58][ycenter + 9] = true;
+			conway.state[xcenter + 58][ycenter + 12] = true;
+			conway.state[xcenter + 58][ycenter + 13] = true;
+			conway.state[xcenter + 58][ycenter + 35] = true;
+			conway.state[xcenter + 58][ycenter + 37] = true;
+			conway.state[xcenter + 58][ycenter + 45] = true;
+			conway.state[xcenter + 58][ycenter + 49] = true;
+			conway.state[xcenter + 58][ycenter + 75] = true;
+			conway.state[xcenter + 58][ycenter + 77] = true;
+			conway.state[xcenter + 58][ycenter + 83] = true;
+			conway.state[xcenter + 58][ycenter + 85] = true;
+			conway.state[xcenter + 58][ycenter + 91] = true;
+			conway.state[xcenter + 58][ycenter + 109] = true;
+			conway.state[xcenter + 58][ycenter + 112] = true;
+			conway.state[xcenter + 59][ycenter + 1] = true;
+			conway.state[xcenter + 59][ycenter + 3] = true;
+			conway.state[xcenter + 59][ycenter + 8] = true;
+			conway.state[xcenter + 59][ycenter + 12] = true;
+			conway.state[xcenter + 59][ycenter + 15] = true;
+			conway.state[xcenter + 59][ycenter + 17] = true;
+			conway.state[xcenter + 59][ycenter + 42] = true;
+			conway.state[xcenter + 59][ycenter + 45] = true;
+			conway.state[xcenter + 59][ycenter + 49] = true;
+			conway.state[xcenter + 59][ycenter + 52] = true;
+			conway.state[xcenter + 59][ycenter + 78] = true;
+			conway.state[xcenter + 59][ycenter + 82] = true;
+			conway.state[xcenter + 59][ycenter + 90] = true;
+			conway.state[xcenter + 59][ycenter + 91] = true;
+			conway.state[xcenter + 59][ycenter + 109] = true;
+			conway.state[xcenter + 59][ycenter + 110] = true;
+			conway.state[xcenter + 59][ycenter + 111] = true;
+			conway.state[xcenter + 60][ycenter + 4] = true;
+			conway.state[xcenter + 60][ycenter + 9] = true;
+			conway.state[xcenter + 60][ycenter + 12] = true;
+			conway.state[xcenter + 60][ycenter + 18] = true;
+			conway.state[xcenter + 60][ycenter + 43] = true;
+			conway.state[xcenter + 60][ycenter + 44] = true;
+			conway.state[xcenter + 60][ycenter + 45] = true;
+			conway.state[xcenter + 60][ycenter + 49] = true;
+			conway.state[xcenter + 60][ycenter + 50] = true;
+			conway.state[xcenter + 60][ycenter + 51] = true;
+			conway.state[xcenter + 60][ycenter + 78] = true;
+			conway.state[xcenter + 60][ycenter + 82] = true;
+			conway.state[xcenter + 60][ycenter + 90] = true;
+			conway.state[xcenter + 60][ycenter + 92] = true;
+			conway.state[xcenter + 61][ycenter + 4] = true;
+			conway.state[xcenter + 61][ycenter + 9] = true;
+			conway.state[xcenter + 61][ycenter + 10] = true;
+			conway.state[xcenter + 61][ycenter + 11] = true;
+			conway.state[xcenter + 61][ycenter + 18] = true;
+			conway.state[xcenter + 61][ycenter + 75] = true;
+			conway.state[xcenter + 61][ycenter + 78] = true;
+			conway.state[xcenter + 61][ycenter + 82] = true;
+			conway.state[xcenter + 61][ycenter + 85] = true;
+			conway.state[xcenter + 62][ycenter + 1] = true;
+			conway.state[xcenter + 62][ycenter + 4] = true;
+			conway.state[xcenter + 62][ycenter + 15] = true;
+			conway.state[xcenter + 62][ycenter + 18] = true;
+			conway.state[xcenter + 62][ycenter + 76] = true;
+			conway.state[xcenter + 62][ycenter + 77] = true;
+			conway.state[xcenter + 62][ycenter + 78] = true;
+			conway.state[xcenter + 62][ycenter + 82] = true;
+			conway.state[xcenter + 62][ycenter + 83] = true;
+			conway.state[xcenter + 62][ycenter + 84] = true;
+			conway.state[xcenter + 63][ycenter + 2] = true;
+			conway.state[xcenter + 63][ycenter + 3] = true;
+			conway.state[xcenter + 63][ycenter + 4] = true;
+			conway.state[xcenter + 63][ycenter + 16] = true;
+			conway.state[xcenter + 63][ycenter + 17] = true;
+			conway.state[xcenter + 63][ycenter + 18] = true;
+			conway.state[xcenter + 63][ycenter + 39] = true;
+			conway.state[xcenter + 63][ycenter + 41] = true;
+			conway.state[xcenter + 63][ycenter + 58] = true;
+			conway.state[xcenter + 63][ycenter + 115] = true;
+			conway.state[xcenter + 63][ycenter + 116] = true;
+			conway.state[xcenter + 63][ycenter + 117] = true;
+			conway.state[xcenter + 64][ycenter + 38] = true;
+			conway.state[xcenter + 64][ycenter + 58] = true;
+			conway.state[xcenter + 64][ycenter + 109] = true;
+			conway.state[xcenter + 64][ycenter + 110] = true;
+			conway.state[xcenter + 64][ycenter + 115] = true;
+			conway.state[xcenter + 64][ycenter + 118] = true;
+			conway.state[xcenter + 64][ycenter + 119] = true;
+			conway.state[xcenter + 64][ycenter + 123] = true;
+			conway.state[xcenter + 64][ycenter + 124] = true;
+			conway.state[xcenter + 65][ycenter + 38] = true;
+			conway.state[xcenter + 65][ycenter + 58] = true;
+			conway.state[xcenter + 65][ycenter + 69] = true;
+			conway.state[xcenter + 65][ycenter + 86] = true;
+			conway.state[xcenter + 65][ycenter + 88] = true;
+			conway.state[xcenter + 65][ycenter + 108] = true;
+			conway.state[xcenter + 65][ycenter + 109] = true;
+			conway.state[xcenter + 65][ycenter + 110] = true;
+			conway.state[xcenter + 65][ycenter + 116] = true;
+			conway.state[xcenter + 65][ycenter + 117] = true;
+			conway.state[xcenter + 65][ycenter + 118] = true;
+			conway.state[xcenter + 65][ycenter + 122] = true;
+			conway.state[xcenter + 65][ycenter + 123] = true;
+			conway.state[xcenter + 65][ycenter + 124] = true;
+			conway.state[xcenter + 66][ycenter + 38] = true;
+			conway.state[xcenter + 66][ycenter + 41] = true;
+			conway.state[xcenter + 66][ycenter + 49] = true;
+			conway.state[xcenter + 66][ycenter + 50] = true;
+			conway.state[xcenter + 66][ycenter + 69] = true;
+			conway.state[xcenter + 66][ycenter + 89] = true;
+			conway.state[xcenter + 66][ycenter + 108] = true;
+			conway.state[xcenter + 66][ycenter + 109] = true;
+			conway.state[xcenter + 66][ycenter + 111] = true;
+			conway.state[xcenter + 66][ycenter + 117] = true;
+			conway.state[xcenter + 66][ycenter + 122] = true;
+			conway.state[xcenter + 66][ycenter + 123] = true;
+			conway.state[xcenter + 66][ycenter + 125] = true;
+			conway.state[xcenter + 67][ycenter + 28] = true;
+			conway.state[xcenter + 67][ycenter + 29] = true;
+			conway.state[xcenter + 67][ycenter + 30] = true;
+			conway.state[xcenter + 67][ycenter + 38] = true;
+			conway.state[xcenter + 67][ycenter + 39] = true;
+			conway.state[xcenter + 67][ycenter + 40] = true;
+			conway.state[xcenter + 67][ycenter + 48] = true;
+			conway.state[xcenter + 67][ycenter + 49] = true;
+			conway.state[xcenter + 67][ycenter + 50] = true;
+			conway.state[xcenter + 67][ycenter + 69] = true;
+			conway.state[xcenter + 67][ycenter + 89] = true;
+			conway.state[xcenter + 67][ycenter + 109] = true;
+			conway.state[xcenter + 67][ycenter + 110] = true;
+			conway.state[xcenter + 67][ycenter + 111] = true;
+			conway.state[xcenter + 67][ycenter + 123] = true;
+			conway.state[xcenter + 67][ycenter + 124] = true;
+			conway.state[xcenter + 67][ycenter + 125] = true;
+			conway.state[xcenter + 68][ycenter + 28] = true;
+			conway.state[xcenter + 68][ycenter + 29] = true;
+			conway.state[xcenter + 68][ycenter + 30] = true;
+			conway.state[xcenter + 68][ycenter + 48] = true;
+			conway.state[xcenter + 68][ycenter + 49] = true;
+			conway.state[xcenter + 68][ycenter + 50] = true;
+			conway.state[xcenter + 68][ycenter + 56] = true;
+			conway.state[xcenter + 68][ycenter + 57] = true;
+			conway.state[xcenter + 68][ycenter + 77] = true;
+			conway.state[xcenter + 68][ycenter + 78] = true;
+			conway.state[xcenter + 68][ycenter + 86] = true;
+			conway.state[xcenter + 68][ycenter + 89] = true;
+			conway.state[xcenter + 68][ycenter + 110] = true;
+			conway.state[xcenter + 68][ycenter + 124] = true;
+			conway.state[xcenter + 69][ycenter + 27] = true;
+			conway.state[xcenter + 69][ycenter + 28] = true;
+			conway.state[xcenter + 69][ycenter + 31] = true;
+			conway.state[xcenter + 69][ycenter + 48] = true;
+			conway.state[xcenter + 69][ycenter + 49] = true;
+			conway.state[xcenter + 69][ycenter + 51] = true;
+			conway.state[xcenter + 69][ycenter + 55] = true;
+			conway.state[xcenter + 69][ycenter + 58] = true;
+			conway.state[xcenter + 69][ycenter + 77] = true;
+			conway.state[xcenter + 69][ycenter + 78] = true;
+			conway.state[xcenter + 69][ycenter + 79] = true;
+			conway.state[xcenter + 69][ycenter + 87] = true;
+			conway.state[xcenter + 69][ycenter + 88] = true;
+			conway.state[xcenter + 69][ycenter + 89] = true;
+			conway.state[xcenter + 69][ycenter + 97] = true;
+			conway.state[xcenter + 69][ycenter + 98] = true;
+			conway.state[xcenter + 69][ycenter + 99] = true;
+			conway.state[xcenter + 70][ycenter + 27] = true;
+			conway.state[xcenter + 70][ycenter + 28] = true;
+			conway.state[xcenter + 70][ycenter + 31] = true;
+			conway.state[xcenter + 70][ycenter + 49] = true;
+			conway.state[xcenter + 70][ycenter + 50] = true;
+			conway.state[xcenter + 70][ycenter + 51] = true;
+			conway.state[xcenter + 70][ycenter + 55] = true;
+			conway.state[xcenter + 70][ycenter + 57] = true;
+			conway.state[xcenter + 70][ycenter + 70] = true;
+			conway.state[xcenter + 70][ycenter + 71] = true;
+			conway.state[xcenter + 70][ycenter + 77] = true;
+			conway.state[xcenter + 70][ycenter + 78] = true;
+			conway.state[xcenter + 70][ycenter + 79] = true;
+			conway.state[xcenter + 70][ycenter + 97] = true;
+			conway.state[xcenter + 70][ycenter + 98] = true;
+			conway.state[xcenter + 70][ycenter + 99] = true;
+			conway.state[xcenter + 71][ycenter + 28] = true;
+			conway.state[xcenter + 71][ycenter + 50] = true;
+			conway.state[xcenter + 71][ycenter + 56] = true;
+			conway.state[xcenter + 71][ycenter + 69] = true;
+			conway.state[xcenter + 71][ycenter + 72] = true;
+			conway.state[xcenter + 71][ycenter + 76] = true;
+			conway.state[xcenter + 71][ycenter + 78] = true;
+			conway.state[xcenter + 71][ycenter + 79] = true;
+			conway.state[xcenter + 71][ycenter + 96] = true;
+			conway.state[xcenter + 71][ycenter + 99] = true;
+			conway.state[xcenter + 71][ycenter + 100] = true;
+			conway.state[xcenter + 72][ycenter + 32] = true;
+			conway.state[xcenter + 72][ycenter + 70] = true;
+			conway.state[xcenter + 72][ycenter + 72] = true;
+			conway.state[xcenter + 72][ycenter + 76] = true;
+			conway.state[xcenter + 72][ycenter + 77] = true;
+			conway.state[xcenter + 72][ycenter + 78] = true;
+			conway.state[xcenter + 72][ycenter + 96] = true;
+			conway.state[xcenter + 72][ycenter + 99] = true;
+			conway.state[xcenter + 72][ycenter + 100] = true;
+			conway.state[xcenter + 73][ycenter + 23] = true;
+			conway.state[xcenter + 73][ycenter + 24] = true;
+			conway.state[xcenter + 73][ycenter + 29] = true;
+			conway.state[xcenter + 73][ycenter + 32] = true;
+			conway.state[xcenter + 73][ycenter + 57] = true;
+			conway.state[xcenter + 73][ycenter + 71] = true;
+			conway.state[xcenter + 73][ycenter + 77] = true;
+			conway.state[xcenter + 73][ycenter + 99] = true;
+			conway.state[xcenter + 74][ycenter + 23] = true;
+			conway.state[xcenter + 74][ycenter + 24] = true;
+			conway.state[xcenter + 74][ycenter + 25] = true;
+			conway.state[xcenter + 74][ycenter + 30] = true;
+			conway.state[xcenter + 74][ycenter + 32] = true;
+			conway.state[xcenter + 74][ycenter + 57] = true;
+			conway.state[xcenter + 74][ycenter + 95] = true;
+			conway.state[xcenter + 75][ycenter + 22] = true;
+			conway.state[xcenter + 75][ycenter + 24] = true;
+			conway.state[xcenter + 75][ycenter + 25] = true;
+			conway.state[xcenter + 75][ycenter + 30] = true;
+			conway.state[xcenter + 75][ycenter + 31] = true;
+			conway.state[xcenter + 75][ycenter + 70] = true;
+			conway.state[xcenter + 75][ycenter + 95] = true;
+			conway.state[xcenter + 75][ycenter + 98] = true;
+			conway.state[xcenter + 75][ycenter + 103] = true;
+			conway.state[xcenter + 75][ycenter + 104] = true;
+			conway.state[xcenter + 76][ycenter + 22] = true;
+			conway.state[xcenter + 76][ycenter + 23] = true;
+			conway.state[xcenter + 76][ycenter + 24] = true;
+			conway.state[xcenter + 76][ycenter + 30] = true;
+			conway.state[xcenter + 76][ycenter + 31] = true;
+			conway.state[xcenter + 76][ycenter + 32] = true;
+			conway.state[xcenter + 76][ycenter + 70] = true;
+			conway.state[xcenter + 76][ycenter + 95] = true;
+			conway.state[xcenter + 76][ycenter + 97] = true;
+			conway.state[xcenter + 76][ycenter + 102] = true;
+			conway.state[xcenter + 76][ycenter + 103] = true;
+			conway.state[xcenter + 76][ycenter + 104] = true;
+			conway.state[xcenter + 77][ycenter + 23] = true;
+			conway.state[xcenter + 77][ycenter + 30] = true;
+			conway.state[xcenter + 77][ycenter + 31] = true;
+			conway.state[xcenter + 77][ycenter + 32] = true;
+			conway.state[xcenter + 77][ycenter + 96] = true;
+			conway.state[xcenter + 77][ycenter + 97] = true;
+			conway.state[xcenter + 77][ycenter + 102] = true;
+			conway.state[xcenter + 77][ycenter + 103] = true;
+			conway.state[xcenter + 77][ycenter + 105] = true;
+			conway.state[xcenter + 78][ycenter + 30] = true;
+			conway.state[xcenter + 78][ycenter + 31] = true;
+			conway.state[xcenter + 78][ycenter + 33] = true;
+			conway.state[xcenter + 78][ycenter + 54] = true;
+			conway.state[xcenter + 78][ycenter + 55] = true;
+			conway.state[xcenter + 78][ycenter + 59] = true;
+			conway.state[xcenter + 78][ycenter + 60] = true;
+			conway.state[xcenter + 78][ycenter + 95] = true;
+			conway.state[xcenter + 78][ycenter + 96] = true;
+			conway.state[xcenter + 78][ycenter + 97] = true;
+			conway.state[xcenter + 78][ycenter + 103] = true;
+			conway.state[xcenter + 78][ycenter + 104] = true;
+			conway.state[xcenter + 78][ycenter + 105] = true;
+			conway.state[xcenter + 79][ycenter + 29] = true;
+			conway.state[xcenter + 79][ycenter + 95] = true;
+			conway.state[xcenter + 79][ycenter + 96] = true;
+			conway.state[xcenter + 79][ycenter + 97] = true;
+			conway.state[xcenter + 79][ycenter + 104] = true;
+			conway.state[xcenter + 80][ycenter + 27] = true;
+			conway.state[xcenter + 80][ycenter + 28] = true;
+			conway.state[xcenter + 80][ycenter + 31] = true;
+			conway.state[xcenter + 80][ycenter + 33] = true;
+			conway.state[xcenter + 80][ycenter + 67] = true;
+			conway.state[xcenter + 80][ycenter + 68] = true;
+			conway.state[xcenter + 80][ycenter + 72] = true;
+			conway.state[xcenter + 80][ycenter + 73] = true;
+			conway.state[xcenter + 80][ycenter + 94] = true;
+			conway.state[xcenter + 80][ycenter + 96] = true;
+			conway.state[xcenter + 80][ycenter + 97] = true;
+			conway.state[xcenter + 81][ycenter + 23] = true;
+			conway.state[xcenter + 81][ycenter + 25] = true;
+			conway.state[xcenter + 81][ycenter + 28] = true;
+			conway.state[xcenter + 81][ycenter + 32] = true;
+			conway.state[xcenter + 81][ycenter + 37] = true;
+			conway.state[xcenter + 81][ycenter + 39] = true;
+			conway.state[xcenter + 81][ycenter + 57] = true;
+			conway.state[xcenter + 81][ycenter + 98] = true;
+			conway.state[xcenter + 82][ycenter + 22] = true;
+			conway.state[xcenter + 82][ycenter + 28] = true;
+			conway.state[xcenter + 82][ycenter + 31] = true;
+			conway.state[xcenter + 82][ycenter + 36] = true;
+			conway.state[xcenter + 82][ycenter + 51] = true;
+			conway.state[xcenter + 82][ycenter + 53] = true;
+			conway.state[xcenter + 82][ycenter + 56] = true;
+			conway.state[xcenter + 82][ycenter + 58] = true;
+			conway.state[xcenter + 82][ycenter + 94] = true;
+			conway.state[xcenter + 82][ycenter + 96] = true;
+			conway.state[xcenter + 82][ycenter + 99] = true;
+			conway.state[xcenter + 82][ycenter + 100] = true;
+			conway.state[xcenter + 83][ycenter + 22] = true;
+			conway.state[xcenter + 83][ycenter + 29] = true;
+			conway.state[xcenter + 83][ycenter + 30] = true;
+			conway.state[xcenter + 83][ycenter + 31] = true;
+			conway.state[xcenter + 83][ycenter + 36] = true;
+			conway.state[xcenter + 83][ycenter + 52] = true;
+			conway.state[xcenter + 83][ycenter + 53] = true;
+			conway.state[xcenter + 83][ycenter + 56] = true;
+			conway.state[xcenter + 83][ycenter + 58] = true;
+			conway.state[xcenter + 83][ycenter + 70] = true;
+			conway.state[xcenter + 83][ycenter + 88] = true;
+			conway.state[xcenter + 83][ycenter + 90] = true;
+			conway.state[xcenter + 83][ycenter + 95] = true;
+			conway.state[xcenter + 83][ycenter + 99] = true;
+			conway.state[xcenter + 83][ycenter + 102] = true;
+			conway.state[xcenter + 83][ycenter + 104] = true;
+			conway.state[xcenter + 84][ycenter + 22] = true;
+			conway.state[xcenter + 84][ycenter + 25] = true;
+			conway.state[xcenter + 84][ycenter + 36] = true;
+			conway.state[xcenter + 84][ycenter + 39] = true;
+			conway.state[xcenter + 84][ycenter + 52] = true;
+			conway.state[xcenter + 84][ycenter + 57] = true;
+			conway.state[xcenter + 84][ycenter + 69] = true;
+			conway.state[xcenter + 84][ycenter + 71] = true;
+			conway.state[xcenter + 84][ycenter + 74] = true;
+			conway.state[xcenter + 84][ycenter + 76] = true;
+			conway.state[xcenter + 84][ycenter + 91] = true;
+			conway.state[xcenter + 84][ycenter + 96] = true;
+			conway.state[xcenter + 84][ycenter + 99] = true;
+			conway.state[xcenter + 84][ycenter + 105] = true;
+			conway.state[xcenter + 85][ycenter + 22] = true;
+			conway.state[xcenter + 85][ycenter + 23] = true;
+			conway.state[xcenter + 85][ycenter + 24] = true;
+			conway.state[xcenter + 85][ycenter + 36] = true;
+			conway.state[xcenter + 85][ycenter + 37] = true;
+			conway.state[xcenter + 85][ycenter + 38] = true;
+			conway.state[xcenter + 85][ycenter + 57] = true;
+			conway.state[xcenter + 85][ycenter + 69] = true;
+			conway.state[xcenter + 85][ycenter + 71] = true;
+			conway.state[xcenter + 85][ycenter + 74] = true;
+			conway.state[xcenter + 85][ycenter + 75] = true;
+			conway.state[xcenter + 85][ycenter + 91] = true;
+			conway.state[xcenter + 85][ycenter + 96] = true;
+			conway.state[xcenter + 85][ycenter + 97] = true;
+			conway.state[xcenter + 85][ycenter + 98] = true;
+			conway.state[xcenter + 85][ycenter + 105] = true;
+			conway.state[xcenter + 86][ycenter + 56] = true;
+			conway.state[xcenter + 86][ycenter + 58] = true;
+			conway.state[xcenter + 86][ycenter + 70] = true;
+			conway.state[xcenter + 86][ycenter + 75] = true;
+			conway.state[xcenter + 86][ycenter + 88] = true;
+			conway.state[xcenter + 86][ycenter + 91] = true;
+			conway.state[xcenter + 86][ycenter + 102] = true;
+			conway.state[xcenter + 86][ycenter + 105] = true;
+			conway.state[xcenter + 87][ycenter + 46] = true;
+			conway.state[xcenter + 87][ycenter + 48] = true;
+			conway.state[xcenter + 87][ycenter + 55] = true;
+			conway.state[xcenter + 87][ycenter + 59] = true;
+			conway.state[xcenter + 87][ycenter + 70] = true;
+			conway.state[xcenter + 87][ycenter + 89] = true;
+			conway.state[xcenter + 87][ycenter + 90] = true;
+			conway.state[xcenter + 87][ycenter + 91] = true;
+			conway.state[xcenter + 87][ycenter + 103] = true;
+			conway.state[xcenter + 87][ycenter + 104] = true;
+			conway.state[xcenter + 87][ycenter + 105] = true;
+			conway.state[xcenter + 88][ycenter + 47] = true;
+			conway.state[xcenter + 88][ycenter + 48] = true;
+			conway.state[xcenter + 88][ycenter + 56] = true;
+			conway.state[xcenter + 88][ycenter + 58] = true;
+			conway.state[xcenter + 88][ycenter + 69] = true;
+			conway.state[xcenter + 88][ycenter + 71] = true;
+			conway.state[xcenter + 89][ycenter + 47] = true;
+			conway.state[xcenter + 89][ycenter + 57] = true;
+			conway.state[xcenter + 89][ycenter + 68] = true;
+			conway.state[xcenter + 89][ycenter + 72] = true;
+			conway.state[xcenter + 89][ycenter + 79] = true;
+			conway.state[xcenter + 89][ycenter + 81] = true;
+			conway.state[xcenter + 90][ycenter + 69] = true;
+			conway.state[xcenter + 90][ycenter + 71] = true;
+			conway.state[xcenter + 90][ycenter + 79] = true;
+			conway.state[xcenter + 90][ycenter + 80] = true;
+			conway.state[xcenter + 91][ycenter + 54] = true;
+			conway.state[xcenter + 91][ycenter + 55] = true;
+			conway.state[xcenter + 91][ycenter + 59] = true;
+			conway.state[xcenter + 91][ycenter + 60] = true;
+			conway.state[xcenter + 91][ycenter + 70] = true;
+			conway.state[xcenter + 91][ycenter + 80] = true;
+			conway.state[xcenter + 92][ycenter + 54] = true;
+			conway.state[xcenter + 92][ycenter + 55] = true;
+			conway.state[xcenter + 92][ycenter + 56] = true;
+			conway.state[xcenter + 92][ycenter + 58] = true;
+			conway.state[xcenter + 92][ycenter + 59] = true;
+			conway.state[xcenter + 92][ycenter + 60] = true;
+			conway.state[xcenter + 93][ycenter + 48] = true;
+			conway.state[xcenter + 93][ycenter + 49] = true;
+			conway.state[xcenter + 93][ycenter + 53] = true;
+			conway.state[xcenter + 93][ycenter + 55] = true;
+			conway.state[xcenter + 93][ycenter + 56] = true;
+			conway.state[xcenter + 93][ycenter + 58] = true;
+			conway.state[xcenter + 93][ycenter + 59] = true;
+			conway.state[xcenter + 93][ycenter + 61] = true;
+			conway.state[xcenter + 93][ycenter + 67] = true;
+			conway.state[xcenter + 93][ycenter + 68] = true;
+			conway.state[xcenter + 93][ycenter + 72] = true;
+			conway.state[xcenter + 93][ycenter + 73] = true;
+			conway.state[xcenter + 94][ycenter + 47] = true;
+			conway.state[xcenter + 94][ycenter + 48] = true;
+			conway.state[xcenter + 94][ycenter + 49] = true;
+			conway.state[xcenter + 94][ycenter + 53] = true;
+			conway.state[xcenter + 94][ycenter + 54] = true;
+			conway.state[xcenter + 94][ycenter + 55] = true;
+			conway.state[xcenter + 94][ycenter + 59] = true;
+			conway.state[xcenter + 94][ycenter + 60] = true;
+			conway.state[xcenter + 94][ycenter + 61] = true;
+			conway.state[xcenter + 94][ycenter + 67] = true;
+			conway.state[xcenter + 94][ycenter + 68] = true;
+			conway.state[xcenter + 94][ycenter + 69] = true;
+			conway.state[xcenter + 94][ycenter + 71] = true;
+			conway.state[xcenter + 94][ycenter + 72] = true;
+			conway.state[xcenter + 94][ycenter + 73] = true;
+			conway.state[xcenter + 95][ycenter + 46] = true;
+			conway.state[xcenter + 95][ycenter + 47] = true;
+			conway.state[xcenter + 95][ycenter + 48] = true;
+			conway.state[xcenter + 95][ycenter + 49] = true;
+			conway.state[xcenter + 95][ycenter + 50] = true;
+			conway.state[xcenter + 95][ycenter + 54] = true;
+			conway.state[xcenter + 95][ycenter + 60] = true;
+			conway.state[xcenter + 95][ycenter + 66] = true;
+			conway.state[xcenter + 95][ycenter + 68] = true;
+			conway.state[xcenter + 95][ycenter + 69] = true;
+			conway.state[xcenter + 95][ycenter + 71] = true;
+			conway.state[xcenter + 95][ycenter + 72] = true;
+			conway.state[xcenter + 95][ycenter + 74] = true;
+			conway.state[xcenter + 95][ycenter + 78] = true;
+			conway.state[xcenter + 95][ycenter + 79] = true;
+			conway.state[xcenter + 96][ycenter + 39] = true;
+			conway.state[xcenter + 96][ycenter + 40] = true;
+			conway.state[xcenter + 96][ycenter + 45] = true;
+			conway.state[xcenter + 96][ycenter + 46] = true;
+			conway.state[xcenter + 96][ycenter + 66] = true;
+			conway.state[xcenter + 96][ycenter + 67] = true;
+			conway.state[xcenter + 96][ycenter + 68] = true;
+			conway.state[xcenter + 96][ycenter + 72] = true;
+			conway.state[xcenter + 96][ycenter + 73] = true;
+			conway.state[xcenter + 96][ycenter + 74] = true;
+			conway.state[xcenter + 96][ycenter + 78] = true;
+			conway.state[xcenter + 96][ycenter + 79] = true;
+			conway.state[xcenter + 96][ycenter + 80] = true;
+			conway.state[xcenter + 97][ycenter + 39] = true;
+			conway.state[xcenter + 97][ycenter + 40] = true;
+			conway.state[xcenter + 97][ycenter + 41] = true;
+			conway.state[xcenter + 97][ycenter + 46] = true;
+			conway.state[xcenter + 97][ycenter + 47] = true;
+			conway.state[xcenter + 97][ycenter + 48] = true;
+			conway.state[xcenter + 97][ycenter + 49] = true;
+			conway.state[xcenter + 97][ycenter + 50] = true;
+			conway.state[xcenter + 97][ycenter + 67] = true;
+			conway.state[xcenter + 97][ycenter + 73] = true;
+			conway.state[xcenter + 97][ycenter + 77] = true;
+			conway.state[xcenter + 97][ycenter + 78] = true;
+			conway.state[xcenter + 97][ycenter + 79] = true;
+			conway.state[xcenter + 97][ycenter + 80] = true;
+			conway.state[xcenter + 97][ycenter + 81] = true;
+			conway.state[xcenter + 98][ycenter + 38] = true;
+			conway.state[xcenter + 98][ycenter + 40] = true;
+			conway.state[xcenter + 98][ycenter + 41] = true;
+			conway.state[xcenter + 98][ycenter + 47] = true;
+			conway.state[xcenter + 98][ycenter + 48] = true;
+			conway.state[xcenter + 98][ycenter + 49] = true;
+			conway.state[xcenter + 98][ycenter + 81] = true;
+			conway.state[xcenter + 98][ycenter + 82] = true;
+			conway.state[xcenter + 98][ycenter + 87] = true;
+			conway.state[xcenter + 98][ycenter + 88] = true;
+			conway.state[xcenter + 99][ycenter + 38] = true;
+			conway.state[xcenter + 99][ycenter + 39] = true;
+			conway.state[xcenter + 99][ycenter + 40] = true;
+			conway.state[xcenter + 99][ycenter + 48] = true;
+			conway.state[xcenter + 99][ycenter + 77] = true;
+			conway.state[xcenter + 99][ycenter + 78] = true;
+			conway.state[xcenter + 99][ycenter + 79] = true;
+			conway.state[xcenter + 99][ycenter + 80] = true;
+			conway.state[xcenter + 99][ycenter + 81] = true;
+			conway.state[xcenter + 99][ycenter + 86] = true;
+			conway.state[xcenter + 99][ycenter + 87] = true;
+			conway.state[xcenter + 99][ycenter + 88] = true;
+			conway.state[xcenter + 100][ycenter + 39] = true;
+			conway.state[xcenter + 100][ycenter + 78] = true;
+			conway.state[xcenter + 100][ycenter + 79] = true;
+			conway.state[xcenter + 100][ycenter + 80] = true;
+			conway.state[xcenter + 100][ycenter + 86] = true;
+			conway.state[xcenter + 100][ycenter + 87] = true;
+			conway.state[xcenter + 100][ycenter + 89] = true;
+			conway.state[xcenter + 101][ycenter + 45] = true;
+			conway.state[xcenter + 101][ycenter + 46] = true;
+			conway.state[xcenter + 101][ycenter + 79] = true;
+			conway.state[xcenter + 101][ycenter + 87] = true;
+			conway.state[xcenter + 101][ycenter + 88] = true;
+			conway.state[xcenter + 101][ycenter + 89] = true;
+			conway.state[xcenter + 102][ycenter + 45] = true;
+			conway.state[xcenter + 102][ycenter + 46] = true;
+			conway.state[xcenter + 102][ycenter + 88] = true;
+			conway.state[xcenter + 103][ycenter + 81] = true;
+			conway.state[xcenter + 103][ycenter + 82] = true;
+			conway.state[xcenter + 104][ycenter + 55] = true;
+			conway.state[xcenter + 104][ycenter + 57] = true;
+			conway.state[xcenter + 104][ycenter + 81] = true;
+			conway.state[xcenter + 104][ycenter + 82] = true;
+			conway.state[xcenter + 105][ycenter + 54] = true;
+			conway.state[xcenter + 106][ycenter + 54] = true;
+			conway.state[xcenter + 106][ycenter + 70] = true;
+			conway.state[xcenter + 106][ycenter + 72] = true;
+			conway.state[xcenter + 107][ycenter + 54] = true;
+			conway.state[xcenter + 107][ycenter + 57] = true;
+			conway.state[xcenter + 107][ycenter + 73] = true;
+			conway.state[xcenter + 108][ycenter + 54] = true;
+			conway.state[xcenter + 108][ycenter + 55] = true;
+			conway.state[xcenter + 108][ycenter + 56] = true;
+			conway.state[xcenter + 108][ycenter + 73] = true;
+			conway.state[xcenter + 109][ycenter + 70] = true;
+			conway.state[xcenter + 109][ycenter + 73] = true;
+			conway.state[xcenter + 110][ycenter + 49] = true;
+			conway.state[xcenter + 110][ycenter + 50] = true;
+			conway.state[xcenter + 110][ycenter + 71] = true;
+			conway.state[xcenter + 110][ycenter + 72] = true;
+			conway.state[xcenter + 110][ycenter + 73] = true;
+			conway.state[xcenter + 111][ycenter + 47] = true;
+			conway.state[xcenter + 111][ycenter + 48] = true;
+			conway.state[xcenter + 111][ycenter + 50] = true;
+			conway.state[xcenter + 112][ycenter + 46] = true;
+			conway.state[xcenter + 112][ycenter + 50] = true;
+			conway.state[xcenter + 112][ycenter + 77] = true;
+			conway.state[xcenter + 112][ycenter + 78] = true;
+			conway.state[xcenter + 113][ycenter + 40] = true;
+			conway.state[xcenter + 113][ycenter + 41] = true;
+			conway.state[xcenter + 113][ycenter + 46] = true;
+			conway.state[xcenter + 113][ycenter + 49] = true;
+			conway.state[xcenter + 113][ycenter + 50] = true;
+			conway.state[xcenter + 113][ycenter + 54] = true;
+			conway.state[xcenter + 113][ycenter + 55] = true;
+			conway.state[xcenter + 113][ycenter + 77] = true;
+			conway.state[xcenter + 113][ycenter + 79] = true;
+			conway.state[xcenter + 113][ycenter + 80] = true;
+			conway.state[xcenter + 114][ycenter + 39] = true;
+			conway.state[xcenter + 114][ycenter + 40] = true;
+			conway.state[xcenter + 114][ycenter + 41] = true;
+			conway.state[xcenter + 114][ycenter + 47] = true;
+			conway.state[xcenter + 114][ycenter + 48] = true;
+			conway.state[xcenter + 114][ycenter + 49] = true;
+			conway.state[xcenter + 114][ycenter + 53] = true;
+			conway.state[xcenter + 114][ycenter + 54] = true;
+			conway.state[xcenter + 114][ycenter + 55] = true;
+			conway.state[xcenter + 114][ycenter + 77] = true;
+			conway.state[xcenter + 114][ycenter + 81] = true;
+			conway.state[xcenter + 115][ycenter + 39] = true;
+			conway.state[xcenter + 115][ycenter + 40] = true;
+			conway.state[xcenter + 115][ycenter + 42] = true;
+			conway.state[xcenter + 115][ycenter + 48] = true;
+			conway.state[xcenter + 115][ycenter + 53] = true;
+			conway.state[xcenter + 115][ycenter + 54] = true;
+			conway.state[xcenter + 115][ycenter + 56] = true;
+			conway.state[xcenter + 115][ycenter + 72] = true;
+			conway.state[xcenter + 115][ycenter + 73] = true;
+			conway.state[xcenter + 115][ycenter + 77] = true;
+			conway.state[xcenter + 115][ycenter + 78] = true;
+			conway.state[xcenter + 115][ycenter + 81] = true;
+			conway.state[xcenter + 115][ycenter + 86] = true;
+			conway.state[xcenter + 115][ycenter + 87] = true;
+			conway.state[xcenter + 116][ycenter + 40] = true;
+			conway.state[xcenter + 116][ycenter + 41] = true;
+			conway.state[xcenter + 116][ycenter + 42] = true;
+			conway.state[xcenter + 116][ycenter + 54] = true;
+			conway.state[xcenter + 116][ycenter + 55] = true;
+			conway.state[xcenter + 116][ycenter + 56] = true;
+			conway.state[xcenter + 116][ycenter + 72] = true;
+			conway.state[xcenter + 116][ycenter + 73] = true;
+			conway.state[xcenter + 116][ycenter + 74] = true;
+			conway.state[xcenter + 116][ycenter + 78] = true;
+			conway.state[xcenter + 116][ycenter + 79] = true;
+			conway.state[xcenter + 116][ycenter + 80] = true;
+			conway.state[xcenter + 116][ycenter + 86] = true;
+			conway.state[xcenter + 116][ycenter + 87] = true;
+			conway.state[xcenter + 116][ycenter + 88] = true;
+			conway.state[xcenter + 117][ycenter + 41] = true;
+			conway.state[xcenter + 117][ycenter + 55] = true;
+			conway.state[xcenter + 117][ycenter + 71] = true;
+			conway.state[xcenter + 117][ycenter + 73] = true;
+			conway.state[xcenter + 117][ycenter + 74] = true;
+			conway.state[xcenter + 117][ycenter + 79] = true;
+			conway.state[xcenter + 117][ycenter + 85] = true;
+			conway.state[xcenter + 117][ycenter + 87] = true;
+			conway.state[xcenter + 117][ycenter + 88] = true;
+			conway.state[xcenter + 118][ycenter + 71] = true;
+			conway.state[xcenter + 118][ycenter + 72] = true;
+			conway.state[xcenter + 118][ycenter + 73] = true;
+			conway.state[xcenter + 118][ycenter + 85] = true;
+			conway.state[xcenter + 118][ycenter + 86] = true;
+			conway.state[xcenter + 118][ycenter + 87] = true;
+			conway.state[xcenter + 119][ycenter + 72] = true;
+			conway.state[xcenter + 119][ycenter + 86] = true;
+		};
+
+		// create a canvas, set its size, get the drawing context
+		var canvas = document.createElement("canvas");
+		canvas.setAttribute("id", "conway");
+		canvas.setAttribute("width", windowWidth);
+		canvas.setAttribute("height", windowHeight);
+		div.appendChild(canvas);
+		var context = canvas.getContext("2d");
+		context.imageSmoothingEnabled= false;
+
+
+		// console.log("dims");
+		// console.log(window.innerHeight);
+		// console.log(window.innerWidth);
+
+		// console.log("conway");
+		// console.log(conway);
+
+		// make an imageData
+		// var imageData = context.createImageData(windowWidth, windowHeight);
+
+		// set imageData to the next image
+		nextImage = function() {
+			var new_state = conway.next();
+			// console.log(new_state);
+			var next_image_data = context.createImageData(windowWidth, windowHeight);
+			for (var x = 0; x < conway.width; x++) {
+				for (var y = 0; y < conway.height; y++) {
+					if (new_state[x][y]) {
+						// setPixel(imageData, x, y, 0, 0, 0, 255);
+						next_image_data.data[4 * x + 4 * conway.width * y] = 0;
+						next_image_data.data[4 * x + 4 * conway.width * y + 1] = 0;
+						next_image_data.data[4 * x + 4 * conway.width * y + 2] = 0;
+						next_image_data.data[4 * x + 4 * conway.width * y + 3] = 255;
+						// console.log(new_state[x][y]);
+					} else {
+						// setPixel(next_image_data, x, y, 255, 255, 255, 0);
+						next_image_data.data[4 * x + 4 * conway.width * y + 1] = 255;
+						next_image_data.data[4 * x + 4 * conway.width * y + 2] = 255;
+						next_image_data.data[4 * x + 4 * conway.width * y + 3] = 255;
+						next_image_data.data[4 * x + 4 * conway.width * y] = 255;
+						// console.log(new_state[x][y]);
+					}
+				};
+			};
+			return next_image_data;
+		};
+
+		// loop variables
+		var currentCount = conway.count();
+		var sameCountsInARow = 0;
+
+		function loop() {
+			// set imageData to the next state
+			// console.log(imageData);
+			// console.log("we looped! " + sameCountsInARow);
+			// clear the rectangle and draw the new frame
+			context.clearRect(0, 0, windowWidth, windowHeight);
+			context.putImageData(nextImage(), 0, 0);
+			// stop looping if the number of living cells hasn't changed in a while
+			if (sameCountsInARow < 10) {
+				window.setTimeout(loop, 1000 / 24);
+			}
+		};
+		// start the loop
+		loop();
+	</script>
+
+</body>
+</html>
